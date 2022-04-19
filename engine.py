@@ -8,9 +8,9 @@ import torchvision.models.detection.mask_rcnn
 from coco_utils import get_coco_api_from_dataset
 from coco_eval import CocoEvaluator
 import utils
+from torch import nn
 
-
-def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
+def train_one_epoch_sup(model, optimizer, data_loader, device, epoch, print_freq):
     model.train()
     metric_logger = utils.MetricLogger(delimiter="  ")
     metric_logger.add_meter('lr', utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
@@ -54,6 +54,46 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
 
     return metric_logger
 
+def train_one_epoch_unsup(model, optimizer, criteria, data_loader, device, epoch, print_freq):
+    model.train()
+    metric_logger = utils.MetricLogger(delimiter="  ")
+    metric_logger.add_meter('lr', utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
+    header = 'Epoch: [{}]'.format(epoch)
+
+    lr_scheduler = None
+    if epoch == 0:
+        warmup_factor = 1. / 1000
+        warmup_iters = min(1000, len(data_loader) - 1)
+
+        lr_scheduler = utils.warmup_lr_scheduler(optimizer, warmup_iters, warmup_factor)
+    
+    for images, targets in metric_logger.log_every(data_loader, print_freq, header):
+        images = images.to(device) 
+        targets = targets.to(device)
+
+        outputs = model(images)
+
+        loss = criteria(outputs, targets)
+
+        # reduce losses over all GPUs for logging purposes
+
+        loss_value = loss.item()
+
+        if not math.isfinite(loss_value):
+            print("Loss is {}, stopping training".format(loss_value))
+            sys.exit(1)
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        if lr_scheduler is not None:
+            lr_scheduler.step()
+
+        # metric_logger.update(loss=losses_reduced, **loss_dict_reduced)
+        metric_logger.update(lr=optimizer.param_groups[0]["lr"])
+
+    return metric_logger
 
 def _get_iou_types(model):
     model_without_ddp = model
