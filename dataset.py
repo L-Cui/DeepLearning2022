@@ -4,9 +4,9 @@
 
 import os
 import yaml
-import random
 from PIL import Image
 import torch
+from transforms import SesemiTransform
 
 class_dict = {
 'cup or mug': 0,
@@ -111,17 +111,20 @@ class_dict = {
 'starfish': 99
 }
 
+
+
 class UnlabeledDataset(torch.utils.data.Dataset):
-    def __init__(self, root, transform):
+    def __init__(self, root, transforms):
         r"""
         Args:
             root: Location of the dataset folder, usually it is /unlabeled
             transform: the transform you want to applied to the images.
         """
-        self.transform = transform
+        self.transforms = transforms
 
         self.image_dir = root
         self.num_images = len(os.listdir(self.image_dir))
+        self.sesemi_transforms = SesemiTransform()
     
     def __len__(self):
         return self.num_images
@@ -130,8 +133,9 @@ class UnlabeledDataset(torch.utils.data.Dataset):
         # the idx of labeled image is from 0
         with open(os.path.join(self.image_dir, f"{idx}.PNG"), 'rb') as f:
             img = Image.open(f).convert('RGB')
-
-        return self.transform(img)
+            img = self.transforms(img)
+            img, target = self.sesemi_transforms(img)
+        return img, target
 
 class LabeledDataset(torch.utils.data.Dataset):
     def __init__(self, root, split, transforms):
