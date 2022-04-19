@@ -1,8 +1,31 @@
 import random
 import torch
-
+import torchvision.transforms as Trans
 from torchvision.transforms import functional as F
 
+class SesemiTransform:
+    """
+    Torchvision-style transform to apply SESEMI augmentation to image.
+    """
+
+    classes = ('0', '90', '180', '270', 'hflip', 'vflip')
+
+    def __call__(self, x):
+        tf_type = random.randint(0, len(self.classes) - 1)
+        if tf_type == 0:
+            x = x
+        elif tf_type == 1:
+            x = Trans.functional.rotate(x, 90)
+        elif tf_type == 2:
+            x = Trans.functional.rotate(x, 180)
+        elif tf_type == 3:
+            x = Trans.functional.rotate(x, 270)
+        elif tf_type == 4:
+            x = Trans.functional.hflip(x)
+        elif tf_type == 5:
+            x = Trans.functional.rotate(x, 180)
+            x = Trans.functional.hflip(x)
+        return x, tf_type
 
 def _flip_coco_person_keypoints(kps, width):
     flip_inds = [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15]
