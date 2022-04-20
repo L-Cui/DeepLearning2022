@@ -49,7 +49,7 @@ def main():
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     
     train_dataset_unsup = UnlabeledDataset(root='./data/unlabeled_data', transforms=get_transform(sup=False))
-    train_loader_unsup = torch.utils.data.DataLoader(train_dataset_unsup, batch_size=16, shuffle=True, num_workers=2)
+    train_loader_unsup = torch.utils.data.DataLoader(train_dataset_unsup, batch_size=2, shuffle=True, num_workers=2)
     
     n_unsup_classes = len(train_dataset_unsup.sesemi_transforms.classes)
     backbone = torchvision.models.resnet50(pretrained=False)
@@ -63,22 +63,22 @@ def main():
     num_epochs = 1
 
     for epoch in range(num_epochs):
-        # train for one epoch, printing every 10 iterations
-        train_one_epoch_unsup(model_unsup, optimizer, criteria, train_loader_unsup, device, epoch, print_freq=50)
+        # train for one epoch, printing every 50 iterations
+        train_one_epoch_unsup(model_unsup, optimizer, criteria, train_loader_unsup, device, epoch, print_freq=200)
         # update the learning rate
         lr_scheduler.step()
 
-    train_dataset = LabeledDataset(root='./data/labeled', split="training", transforms=get_transform(train=True))
+    train_dataset = LabeledDataset(root='./data/labeled', split="training", transforms=get_transform(sup=True))
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=2, shuffle=True, num_workers=2, collate_fn=utils.collate_fn)
 
-    valid_dataset = LabeledDataset(root='./data/labeled', split="validation", transforms=get_transform(train=False))
+    valid_dataset = LabeledDataset(root='./data/labeled', split="validation", transforms=get_transform(sup=False))
     valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=2, shuffle=False, num_workers=2, collate_fn=utils.collate_fn)
     
     n_sup_classess = 100
-    model_sup = FcExt.BackboneToFastRcnn(n_sup_classess, backbone, trainable_backbone_layers=2)
- 
+    model_sup = FcExt.BackboneToFastRcnn(n_sup_classess, model_unsup.backbone, trainable_backbone_layers=2)
+    model_sup.to(device)
     for epoch in range(num_epochs):
-        # train for one epoch, printing every 10 iterations
+        # train for one epoch, printing every 50 iterations
         train_one_epoch_sup(model_sup, optimizer, train_loader, device, epoch, print_freq=50)
         # update the learning rate
         lr_scheduler.step()
