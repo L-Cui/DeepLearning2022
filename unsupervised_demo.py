@@ -38,6 +38,7 @@ def get_transform(sup=True):
     if sup: # for supervised learning 
         transforms.append(T.ToTensor())
         # transforms.append(TorchTransform.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)))
+        transforms.append(T.Cutout(5,5))
         transforms.append(T.RandomHorizontalFlip(0.5))
         return T.Compose(transforms)    
     else:
