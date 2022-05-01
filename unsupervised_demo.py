@@ -21,6 +21,7 @@ import FeatureExtractor as FcExt
 from dataset import UnlabeledDataset, LabeledDataset
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 def imshow(img: torch.Tensor):
     """
@@ -44,6 +45,7 @@ def get_transform(sup=True):
     else:
         transforms.append(TorchTransform.ToTensor())
         transforms.append(TorchTransform.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)))
+        transforms.append(T.AddGaussianNoise(0.0, 0.5))
         return TorchTransform.Compose(transforms)
 
 def main():
@@ -68,7 +70,9 @@ def main():
         train_one_epoch_unsup(model_unsup, optimizer, criteria, train_loader_unsup, device, epoch, print_freq=200)
         # update the learning rate
         lr_scheduler.step()
-
+    
+    torch.save(model_unsup, './backbone/{}.pth'.format(os.times().system))
+    
     train_dataset = LabeledDataset(root='./data/labeled', split="training", transforms=get_transform(sup=True))
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=2, shuffle=True, num_workers=2, collate_fn=utils.collate_fn)
 
@@ -85,7 +89,7 @@ def main():
         lr_scheduler.step()
         # evaluate on the test dataset
         evaluate(model_sup, valid_loader, device=device)       
-    
+    torch.save(model_sup, './backbone/{}.pth'.format(os.times().system))
     print("That's it!")
     
 if __name__=="__main__":
