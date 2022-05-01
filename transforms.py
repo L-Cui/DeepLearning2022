@@ -2,7 +2,7 @@ import random
 import torch
 import torchvision.transforms as Trans
 from torchvision.transforms import functional as F
-import numpy as mp
+import numpy as np
 class SesemiTransform:
     """
     Torchvision-style transform to apply SESEMI augmentation to image.
@@ -66,33 +66,42 @@ class RandomHorizontalFlip(object):
                 target["keypoints"] = keypoints
         return image, target
 
-class Cutout(object):
-    def __init__(self, n_holes, length):
-        self.n_holes = n_holes
-        self.length = length
+class Normalize(object):
+    def __init__(self, mean, std):
+        self.mean = mean
+        self.std = std
+        self.normalize = Trans.Normalize(mean=self.mean, std=self.std)
+    def __call__(self, image, target):
+        image = self.normalize(image)
+        return image, target
+    
+# class Cutout(object):
+#     def __init__(self, n_holes, length):
+#         self.n_holes = n_holes
+#         self.length = length
 
-    def __call__(self, img, target):
-        h = img.size(1)
-        w = img.size(2)
+#     def __call__(self, img, target):
+#         h = img.size(1)
+#         w = img.size(2)
 
-        mask = np.ones((h,w), np.float32)
+#         mask = np.ones((h,w), np.float32)
 
-        for n in range(self.n_holes):
-            y = np.random.randint(h)
-            x = np.random.randint(w)
+#         for n in range(self.n_holes):
+#             y = np.random.randint(h)
+#             x = np.random.randint(w)
 
-            y1 = np.clip(y - self.length // 2, 0, h)
-            y2 = np.clip(y + self.length // 2, 0, h)
-            x1 = np.clip(x - self.length // 2, 0, w)
-            x2 = np.clip(x + self.length // 2, 0, w)
+#             y1 = np.clip(y - self.length // 2, 0, h)
+#             y2 = np.clip(y + self.length // 2, 0, h)
+#             x1 = np.clip(x - self.length // 2, 0, w)
+#             x2 = np.clip(x + self.length // 2, 0, w)
 
-            mask[y1:y2, x1:x2] = 0.
+#             mask[y1:y2, x1:x2] = 0.
 
-        mask = torch.from_numpy(mask)
-        mask = mask.expand_as(img)
-        img = img * mask
+#         mask = torch.from_numpy(mask)
+#         mask = mask.expand_as(img)
+#         img = img * mask
 
-        return img, target
+#         return img, target
 
 class ToTensor(object):
     def __call__(self, image, target):

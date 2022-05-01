@@ -37,8 +37,8 @@ def get_transform(sup=True):
     
     if sup: # for supervised learning 
         transforms.append(T.ToTensor())
-        # transforms.append(TorchTransform.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)))
-        transforms.append(T.Cutout(5,5))
+        transforms.append(T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)))
+        # transforms.append(T.Cutout(5,5))
         transforms.append(T.RandomHorizontalFlip(0.5))
         return T.Compose(transforms)    
     else:
@@ -72,11 +72,11 @@ def main():
     train_dataset = LabeledDataset(root='./data/labeled', split="training", transforms=get_transform(sup=True))
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=2, shuffle=True, num_workers=2, collate_fn=utils.collate_fn)
 
-    valid_dataset = LabeledDataset(root='./data/labeled', split="validation", transforms=get_transform(sup=False))
+    valid_dataset = LabeledDataset(root='./data/labeled', split="validation", transforms=get_transform(sup=True))
     valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=2, shuffle=False, num_workers=2, collate_fn=utils.collate_fn)
     
-    n_sup_classess = 100
-    model_sup = FcExt.BackboneToFastRcnn(n_sup_classess, model_unsup.backbone, trainable_backbone_layers=2)
+    n_sup_classess = 101
+    model_sup = FcExt.BackboneToFastRcnn(n_sup_classess, model_unsup.backbone, trainable_backbone_layers=4)
     model_sup.to(device)
     for epoch in range(num_epochs):
         # train for one epoch, printing every 50 iterations
